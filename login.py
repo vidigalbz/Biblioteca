@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter.messagebox import *
 import mysql.connector
 import biblioteca
+
 class Login(Tk):
     def __init__(self, *args):
         super().__init__(*args)
@@ -40,8 +41,6 @@ class Login(Tk):
     
         self.button_cancel = Button(self.frame_buttons, text='cancelar', width=10, command=self.quit)
         self.button_cancel.pack(side=RIGHT, padx=10)
-
-    
 
     def verify_login(self):
         if self.entry_nome.get() == "biblioteca" and self.entry_password.get() == "123":

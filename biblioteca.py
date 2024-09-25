@@ -18,8 +18,13 @@ class Adm(Tk):
     def clear(self):
         for i in self.winfo_children():
             i.destroy()
+    def atualizar_ids():
+        comando = """SET @count = 0;
+                    UPDATE `tabela` SET `tabela`.`id` = @count:= @count + 1;"""
+
 
     def dashboard(self):
+
         self.geometry("900x720")
         self.contadores()
 
@@ -68,36 +73,41 @@ class Adm(Tk):
 
     def tab_gerenciamentodelivros(self):
         self.title("Gerenciamento de Livros")
-        self.geometry("1000x700")
+        self.geometry("1120x700")
 
-        self.label_titulo = Label(self, text="Título").place(x=15, y=15)
+        self.label_titulo = Label(self, text="Título").place(x=15, y=25)
         self.entry_titulo = Entry(self, width=30)
-        self.entry_titulo.place(x=15, y=40)
+        self.entry_titulo.place(x=15, y=50)
 
-        self.label_autor = Label(self, text="Autor").place(x=15, y=65)
+        self.label_autor = Label(self, text="Autor").place(x=15, y=75)
         self.entry_autor = Entry(self, width=30)
-        self.entry_autor.place(x=15, y=90)
+        self.entry_autor.place(x=15, y=100)
 
-        self.label_genero = Label(self, text="Gênero").place(x=15, y=115)
+        self.label_genero = Label(self, text="Gênero").place(x=15, y=125)
         self.entry_genero = Entry(self, width=30)
-        self.entry_genero.place(x=15, y=140)
+        self.entry_genero.place(x=15, y=150)
         
-        self.label_idioma = Label(self, text="Idioma").place(x=15, y=165)
+        self.label_idioma = Label(self, text="Idioma").place(x=15, y=175)
         self.entry_idioma = Entry(self, width=30)
-        self.entry_idioma.place(x=15, y=190)
+        self.entry_idioma.place(x=15, y=200)
 
-        self.label_localizacao = Label(self, text="Localização").place(x=15, y=215)
+        self.label_localizacao = Label(self, text="Localização").place(x=15, y=225)
         self.entry_localizacao = Entry(self, width=30)
-        self.entry_localizacao.place(x=15, y=240)
+        self.entry_localizacao.place(x=15, y=250)
 
         self.frame_pesquisa = Frame(self)
-        self.frame_pesquisa.place(x=665, y=15)
+        self.frame_pesquisa.place(x=745, y=15)
         self.label_pesquisa = Label(self.frame_pesquisa, text="Pesquisar:")
         self.label_pesquisa.grid(column=0, row=0)
         self.entry_pesquisa = Entry(self.frame_pesquisa, width=30)
         self.entry_pesquisa.grid(column=1, row=0)
         self.button_pesquisa = Button(self.frame_pesquisa, text="🔎", command=self.fazer_pesquisa_livros)
         self.button_pesquisa.grid(column=2, row=0)
+        
+        filtro = ["Titulo", "Autor", "Genêro", "Idioma", "Localização", "Status"]
+        self.combobox_pesquisa = ttk.Combobox(self, values=filtro)
+        self.combobox_pesquisa.set("Filtro")
+        self.combobox_pesquisa.place(x=600,y=17)
 
         self.button_cadastrar = Button(self, text='Cadastrar', width=20, command=lambda: [self.cadastrar_livro()])
         self.button_cadastrar.place(x=25, y=290)
@@ -105,13 +115,16 @@ class Adm(Tk):
         self.button_cancel = Button(self, text='Cancelar', width=20, command=lambda: [self.clear(), self.dashboard()])
         self.button_cancel.place(x=25, y=325)
 
-        self.button_remover = Button(self, text="Remover", width = 20, command=lambda: [self.remover_itemdatreeview(self.tree_livros, "dim_livros", "Titulo", 2)])
-        self.button_remover.place(x=777, y=280)
+        self.button_remover = Button(self, text="Remover", width=20, command=lambda: [self.remover_itemdatreeview(self.tree_livros, "dim_livros", "Titulo", 1)])
+        self.button_remover.place(x=860, y=280)
 
-        self.tree_livros = ttk.Treeview(self, columns=("ID", "Título", "Autor", "Gênero", "Idioma", "Localização"), show="headings")
-        self.tree_livros.place(x=250, y=50)
+        self.button_editar = Button(self, text="Editar", width=20, command=lambda: [self.editar(self.tree_livros, self.button_cadastrar)])
+        self.button_editar.place(x=720, y=280)
 
-        for i in ["ID", "Título", "Autor", "Gênero", "Idioma", "Localização"]:
+        self.tree_livros = ttk.Treeview(self, columns=("ID", "Título", "Autor", "Gênero", "Idioma", "Localização", "Status"), show="headings")
+        self.tree_livros.place(x=230, y=50)
+
+        for i in ["ID", "Título", "Autor", "Gênero", "Idioma", "Localização", "Status"]:
             self.tree_livros.heading(f"{i}", text=f"{i}")
         
         self.tree_livros.column("ID", width=75, anchor="center")
@@ -120,9 +133,9 @@ class Adm(Tk):
         self.tree_livros.column("Gênero", width=125, anchor="center")
         self.tree_livros.column("Idioma", width=125, anchor="center")
         self.tree_livros.column("Localização", width=125, anchor="center")
-
+        self.tree_livros.column("Status", width=100, anchor="center")
         scrollbar = Scrollbar(self, orient=VERTICAL, command=self.tree_livros.yview)
-        scrollbar.place(x=935, y=50, height=227)
+        scrollbar.place(x=1015, y=50, height=227)
 
         self.tree_livros.configure(yscrollcommand=scrollbar.set)
 
@@ -152,10 +165,19 @@ class Adm(Tk):
         self.idioma = self.cadastrar_livro_fatos("fato_idioma", "idioma", self.entry_idioma.get())
         self.localizacao =  self.cadastrar_livro_fatos("fato_localizaçao", "localizaçao", self.entry_localizacao.get())
 
-        comando = "INSERT INTO dim_livros(Titulo, Autor, Genero, Idioma, Localizaçao) VALUES(%s, %s, %s, %s, %s)"
-        self.cursor.execute(comando, (self.entry_titulo.get(), self.autor, self.genero, self.idioma, self.localizacao))
-        self.conexao.commit()
-    
+        self.cursor.execute("SELECT * FROM dim_livros WHERE Titulo = %s", (self.entry_titulo.get(), ))
+        resultado = self.cursor.fetchone()
+
+        if resultado:
+            for coluna, valor in [("Titulo", self.entry_titulo.get()), ("Autor", self.autor), ("Genero", self.genero), ("Idioma", self.idioma), ("Localizaçao", self.localizacao)]:
+                self.cursor.execute("UPDATE dim_livros SET "+ coluna +"= %s WHERE id_livros = %s", (valor, resultado[0]))
+            self.conexao.commit()
+
+        else:
+            comando = "INSERT INTO dim_livros(Titulo, Autor, Genero, Idioma, Localizaçao) VALUES(%s, %s, %s, %s, %s)"
+            self.cursor.execute(comando, (self.entry_titulo.get(), self.autor, self.genero, self.idioma, self.localizacao))
+            self.conexao.commit()
+        
         for item in self.tree_livros.get_children():
             self.tree_livros.delete(item)
 
@@ -178,25 +200,38 @@ class Adm(Tk):
             idioma = self.valores_fatos("fato_idioma", "idioma", "id_idioma", i[4])
             localizacao = self.valores_fatos ("fato_localizaçao", "localizaçao", "id_localizaçao", i[5])
 
-            self.tree_livros.insert("", "end", values=(i[0], i[1], autor, genero, idioma, localizacao))
+            self.tree_livros.insert("", "end", values=(i[0], i[1], autor, genero, idioma, localizacao, i[6]))
 
     def fazer_pesquisa_livros(self):
-        comando = """
-            SELECT * 
-            FROM dim_livros
-            JOIN fato_autor ON dim_livros.Autor = fato_autor.id_autor
-            JOIN fato_genero ON dim_livros.Genero = fato_genero.id_genero
-            JOIN fato_idioma ON dim_livros.Idioma = fato_idioma.id_idioma
-            JOIN fato_localizaçao ON dim_livros.Localizaçao = fato_localizaçao.id_localizaçao
-            WHERE dim_livros.id_livros LIKE %s 
-            OR dim_livros.Titulo LIKE %s
-            OR fato_autor.autor LIKE %s
-            OR fato_genero.genero LIKE %s
-            OR fato_idioma.idioma LIKE %s
-            OR fato_localizaçao.localizaçao LIKE %s
-            """
-        pesquisa = f"%{self.entry_pesquisa.get()}"
-        self.cursor.execute(comando, (pesquisa, pesquisa, pesquisa, pesquisa, pesquisa, pesquisa))
+        valor = self.combobox_pesquisa.get()
+        comando = ""
+        
+        if valor == "Filtro" or valor == "":
+            comando = "SELECT * FROM dim_livros WHERE id_livros LIKE %s"
+        
+        elif valor == "Titulo":
+            comando = "SELECT * FROM dim_livros WHERE Titulo LIKE %s"
+        
+        elif valor == "Autor":
+            comando = "SELECT * FROM dim_livros JOIN fato_autor ON dim_livros.Autor = fato_autor.id_autor WHERE fato_autor.autor LIKE %s"
+        
+        elif valor == "Genêro":
+            comando = "SELECT * FROM dim_livros JOIN fato_genero ON dim_livros.Genero = fato_genero.id_genero WHERE fato_genero.genero LIKE %s"
+        
+        elif valor == "Idioma":
+            comando = "SELECT * FROM dim_livros JOIN fato_idioma ON dim_livros.Idioma = fato_idioma.id_idioma WHERE fato_idioma.idioma LIKE %s"
+        
+        elif valor == "Localização":
+            comando = "SELECT * FROM dim_livros JOIN fato_localizaçao ON dim_livros.Localizaçao = fato_localizaçao.id_localizaçao WHERE fato_localizaçao.localizaçao LIKE %s"
+        
+        elif valor == "Status":
+            comando = "SELECT * FROM dim_livros WHERE Status LIKE %s"
+        
+        else:
+            showerror("ERRO", "Ocorreu um erro no seu filtro de pesquisa\nDeixe ele em branco para continuar.")
+
+        pesquisa = f"{self.entry_pesquisa.get()}%"
+        self.cursor.execute(comando, (pesquisa, ))
 
         resultado = self.cursor.fetchall()
 
@@ -209,9 +244,36 @@ class Adm(Tk):
             idioma = self.valores_fatos("fato_idioma", "idioma", "id_idioma", i[4])
             localizacao = self.valores_fatos ("fato_localizaçao", "localizaçao", "id_localizaçao", i[5])
 
-            self.tree_livros.insert("", "end", values=(i[0], i[1], autor, genero, idioma, localizacao))
+            self.tree_livros.insert("", "end", values=(i[0], i[1], autor, genero, idioma, localizacao, i[6]))
+     
+    def editar(self, tree, button):
+        self.select = tree.selection()
+        button.config(text="Finalizar Edição")
 
+        if self.select:
+            titulo = tree.item(self.select, "values")[1]
+            autor = tree.item(self.select, "values")[2]
+            genero = tree.item(self.select, "values")[3]
+            idioma = tree.item(self.select, "values")[4]
+            localizacao = tree.item(self.select, "values")[5]
+
+            self.entry_titulo.delete(0, END)
+            self.entry_titulo.insert(0, titulo)
             
+            self.entry_autor.delete(0, END)
+            self.entry_autor.insert(0, autor)
+
+            self.entry_genero.delete(0, END)
+            self.entry_genero.insert(0, genero)
+
+            self.entry_idioma.delete(0, END)
+            self.entry_idioma.insert(0, idioma)
+
+            self.entry_localizacao.delete(0, END)
+            self.entry_localizacao.insert(0, localizacao)
+        else:
+            showerror("ERRO", "Selecione um item para usar esta função")
+
     def tab_gerenciamentodeleitores(self):
         self.title("Gerenciamento de Leitores")
 
@@ -306,7 +368,7 @@ class Adm(Tk):
             showerror("ERRO", "Selecione um produto para usar esta função")
         
         else:
-            yesno = askyesno("Confirmação", "Voce realmente deseja remover este produto?")
+            yesno = askyesno("Confirmação", "Voce realmente deseja remover este item?")
         
             if yesno:
                 valor = tree.item(self.selected_item, "values")[index_info]
@@ -330,6 +392,5 @@ class Adm(Tk):
             for i in resultado:
                 self.tree_leitores.insert("",  "end", values=(i[0], i[1], i[2], i[3]))
     
-
 if __name__ == "__main__":
     Adm().mainloop()
