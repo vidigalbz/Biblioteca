@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from tkinter.messagebox import *
 import mysql.connector
+from login import Login
 
 class Adm(Tk):
     def __init__(self, *args):
@@ -22,7 +23,6 @@ class Adm(Tk):
         comando = """SET @count = 0;
                     UPDATE `tabela` SET `tabela`.`id` = @count:= @count + 1;"""
 
-
     def dashboard(self):
 
         self.geometry("900x720")
@@ -37,7 +37,7 @@ class Adm(Tk):
         self.button_gerenciamentodeleitores = Button(self, text="GERENCIAMENTO DE LEITORES", font=("Arial", 9, "bold"), height=10, width=29, command=lambda: (self.clear(), self.tab_gerenciamentodeleitores(), self.carregar_treeview_leitores()))
         self.button_gerenciamentodeleitores.place(x=350, y=250)
 
-        self.button_gerenciamentodeemprestimos = Button(self, text=("GERENCIAMENTO DE EMPRESTIMOS"), font=("Arial", 9, "bold"), height=10, width=29, command=lambda: (self.clear()))
+        self.button_gerenciamentodeemprestimos = Button(self, text=("GERENCIAMENTO DE EMPRESTIMOS"), font=("Arial", 9, "bold"), height=10, width=29, command=lambda: (self.clear(), self.tab_gerenciamentodeemprestimos()))
         self.button_gerenciamentodeemprestimos.place(x=600, y=250)
 
         self.label_numerodelivros = Label(self, text=f"Número total de livros: {self.num_livros}")
@@ -115,10 +115,10 @@ class Adm(Tk):
         self.button_cancel = Button(self, text='Cancelar', width=20, command=lambda: [self.clear(), self.dashboard()])
         self.button_cancel.place(x=25, y=325)
 
-        self.button_remover = Button(self, text="Remover", width=20, command=lambda: [self.remover_itemdatreeview(self.tree_livros, "dim_livros", "Titulo", 1)])
+        self.button_remover = Button(self, text="Remover", width=20, command=lambda: [self.remover_itemdatreeview(self.tree_livros, "dim_livros", "id_livros", 0)])
         self.button_remover.place(x=860, y=280)
 
-        self.button_editar = Button(self, text="Editar", width=20, command=lambda: [self.editar(self.tree_livros, self.button_cadastrar)])
+        self.button_editar = Button(self, text="Editar", width=20, command=lambda: [self.editar_livros(self.tree_livros, self.button_cadastrar)])
         self.button_editar.place(x=720, y=280)
 
         self.tree_livros = ttk.Treeview(self, columns=("ID", "Título", "Autor", "Gênero", "Idioma", "Localização", "Status"), show="headings")
@@ -165,12 +165,13 @@ class Adm(Tk):
         self.idioma = self.cadastrar_livro_fatos("fato_idioma", "idioma", self.entry_idioma.get())
         self.localizacao =  self.cadastrar_livro_fatos("fato_localizaçao", "localizaçao", self.entry_localizacao.get())
 
-        self.cursor.execute("SELECT * FROM dim_livros WHERE Titulo = %s", (self.entry_titulo.get(), ))
-        resultado = self.cursor.fetchone()
 
+        self.cursor.execute("SELECT * FROM dim_livros WHERE id_livros = %s", (self.id, ))
+        resultado = self.cursor.fetchone()
         if resultado:
             for coluna, valor in [("Titulo", self.entry_titulo.get()), ("Autor", self.autor), ("Genero", self.genero), ("Idioma", self.idioma), ("Localizaçao", self.localizacao)]:
-                self.cursor.execute("UPDATE dim_livros SET "+ coluna +"= %s WHERE id_livros = %s", (valor, resultado[0]))
+                query = f"UPDATE dim_livros SET {coluna} = %s WHERE id_livros = %s"
+                self.cursor.execute(query, (valor, resultado[0]))
             self.conexao.commit()
 
         else:
@@ -246,11 +247,12 @@ class Adm(Tk):
 
             self.tree_livros.insert("", "end", values=(i[0], i[1], autor, genero, idioma, localizacao, i[6]))
      
-    def editar(self, tree, button):
+    def editar_livros(self, tree, button):
         self.select = tree.selection()
         button.config(text="Finalizar Edição")
 
         if self.select:
+            self.id = tree.item(self.select, "values")[0]
             titulo = tree.item(self.select, "values")[1]
             autor = tree.item(self.select, "values")[2]
             genero = tree.item(self.select, "values")[3]
@@ -278,19 +280,19 @@ class Adm(Tk):
         self.title("Gerenciamento de Leitores")
 
         self.label_nome = Label(self, text='Nome')
-        self.label_nome.place(x=15, y=15)
+        self.label_nome.place(x=15, y=25)
         self.entry_nome = Entry(self, width=30)
-        self.entry_nome.place(x=15, y=40)
+        self.entry_nome.place(x=15, y=50)
 
         self.label_sobrenome = Label(self, text='Sobrenome')
-        self.label_sobrenome.place(x=15, y=65)
+        self.label_sobrenome.place(x=15, y=75)
         self.entry_sobrenome = Entry(self, width=30)
-        self.entry_sobrenome.place(x=15, y=90)
+        self.entry_sobrenome.place(x=15, y=100)
 
         self.label_telefone = Label(self, text='Telefone')
-        self.label_telefone.place(x=15, y=115)
+        self.label_telefone.place(x=15, y=125)
         self.entry_telefone = Entry(self, width=30)
-        self.entry_telefone.place(x=15, y=140)
+        self.entry_telefone.place(x=15, y=150)
         
         self.frame_pesquisa = Frame(self)
         self.frame_pesquisa.place(x=555, y=15)
@@ -301,14 +303,22 @@ class Adm(Tk):
         self.button_pesquisa = Button(self.frame_pesquisa, text="🔎", command=self.fazer_pesquisa_leitores)
         self.button_pesquisa.grid(column=2, row=0)
 
+        filtro = ["Nome", "Sobrenome", "Telefone"]
+        self.combobox_pesquisa = ttk.Combobox(self, values=filtro)
+        self.combobox_pesquisa.set("Filtro")
+        self.combobox_pesquisa.place(x=400,y=17)
+
         self.button_cadastrar = Button(self, text='Cadastrar', width=20, command=lambda: [self.cadastrar_leitor(self.entry_nome.get(), self.entry_sobrenome.get(), self.entry_telefone.get())])
-        self.button_cadastrar.place(x=25, y=180)
+        self.button_cadastrar.place(x=25, y=190)
     
         self.button_cancel = Button(self, text='Cancelar', width=20, command=lambda: [self.clear(), self.dashboard()])
-        self.button_cancel.place(x=25, y=220)
+        self.button_cancel.place(x=25, y=230)
 
         self.button_remover = Button(self, text="Remover", width = 20, command=lambda: [self.remover_itemdatreeview(self.tree_leitores, "dim_leitor", "telefone", 3)])
         self.button_remover.place(x=675, y=280)
+
+        self.button_editar = Button(self, text="Editar", width=20, command=lambda: [self.editar_leitores(self.tree_leitores, self.button_cadastrar)])
+        self.button_editar.place(x=525, y=280)
 
         self.tree_leitores = ttk.Treeview(self, columns=("ID", "Nome", "Sobrenome", "Telefone"), show="headings")
         self.tree_leitores.place(x=300, y=50)
@@ -343,6 +353,9 @@ class Adm(Tk):
             showerror("ERRO", "Insira apenas números como telefone")
             return
 
+        elif len(self.entry_telefone.get()) >= 12:
+            showerror("ERRO", "Formato de telefone invalido, insira apenas 11 números")
+       
         else:
             self.cursor.execute("INSERT INTO dim_leitor (nome, sobrenome, telefone) VALUES (%s, %s, %s)", (valor1, valor2, valor3))
             self.conexao.commit()
@@ -377,20 +390,86 @@ class Adm(Tk):
                 self.conexao.commit()
                 
                 tree.delete(self.selected_item)
+
+    def editar_leitores(self, tree, button):
+        self.select = tree.selection()
+        button.config(text="Finalizar Edição")
+
+        if self.select:
+            titulo = tree.item(self.select, "values")[1]
+            autor = tree.item(self.select, "values")[2]
+            genero = tree.item(self.select, "values")[3]
+            idioma = tree.item(self.select, "values")[4]
+            localizacao = tree.item(self.select, "values")[5]
+
+            self.entry_titulo.delete(0, END)
+            self.entry_titulo.insert(0, titulo)
+            
+            self.entry_autor.delete(0, END)
+            self.entry_autor.insert(0, autor)
+
+            self.entry_genero.delete(0, END)
+            self.entry_genero.insert(0, genero)
+
+            self.entry_idioma.delete(0, END)
+            self.entry_idioma.insert(0, idioma)
+
+            self.entry_localizacao.delete(0, END)
+            self.entry_localizacao.insert(0, localizacao)
+        else:
+            showerror("ERRO", "Selecione um item para usar esta função")
     
     def fazer_pesquisa_leitores(self):
-        comando = "SELECT * FROM dim_leitor WHERE id_leitor LIKE %s or nome LIKE %s or sobrenome LIKE %s or telefone LIKE %s"
-        pesquisa = f"%{self.entry_pesquisa.get()}%"
-        self.cursor.execute(comando, (pesquisa, pesquisa, pesquisa, pesquisa))
+        valor = self.combobox_pesquisa.get()
+        comando = ""
+
+        if valor == "Filtro" or valor == "":
+            comando = "SELECT * FROM dim_leitor WHERE id_leitor LIKE %s"
+
+        elif valor == "Nome":
+            comando = "SELECT * FROM dim_leitor WHERE nome LIKE %s sobrenome LIKE %s or telefone LIKE %s"
+        
+        elif valor == "Sobrenome":
+            comando = "SELECT * FROM dim_leitor WHERE  sobrenome LIKE %s"
+        
+        elif valor == "Telefone":
+            comando = "SELECT * FROM dim_leitor WHERE telefone LIKE %s"
+        
+        else:
+            showerror("ERRO", "Erro ao utilizar o filtro. Deixe ele em branco ou selecione uma opção")
+        
+        pesquisa = f"{self.entry_pesquisa.get()}%"
+        self.cursor.execute(comando, (pesquisa, ))
 
         resultado = self.cursor.fetchall()
 
         for item in self.tree_leitores.get_children():
             self.tree_leitores.delete(item)
         
-        else:
-            for i in resultado:
-                self.tree_leitores.insert("",  "end", values=(i[0], i[1], i[2], i[3]))
-    
+        for i in resultado:
+            self.tree_leitores.insert("",  "end", values=(i[0], i[1], i[2], i[3]))
+
+    def tab_gerenciamentodeemprestimos(self):
+        self.button_voltar = Button(self, text="Voltar", command=lambda: [self.clear(), self.dashboard()], width=30)
+        self.button_voltar.place(x=0, y=690)
+        self.tree_emprestimos = ttk.Treeview(self, columns=("ID", "Titulo", "Nome", "Telefone", "Data de Entrega", "Data de Devolução", "Status"), show="headings", height=33)
+        self.tree_emprestimos.place(x=0, y=0)
+
+        for i in ["ID", "Titulo", "Nome", "Telefone", "Data de Entrega", "Data de Devolução", "Status"]:
+            self.tree_emprestimos.heading(f"{i}", text=f"{i}")
+        
+        self.tree_emprestimos.column("ID", width=75, anchor="center")
+        self.tree_emprestimos.column("Titulo", width=150, anchor="center")
+        self.tree_emprestimos.column("Nome", width=150, anchor="center")
+        self.tree_emprestimos.column("Telefone", width=130, anchor="center")
+        self.tree_emprestimos.column("Data de Entrega", width=125, anchor="center")
+        self.tree_emprestimos.column("Data de Devolução", width=125, anchor="center")
+        self.tree_emprestimos.column("Status", width=135, anchor="center")
+
+        scrollbar = Scrollbar(self, orient=VERTICAL, command=self.tree_emprestimos.yview)
+        scrollbar.place(x=885, y=0, height=685)
+
+        self.tree_emprestimos.configure(yscrollcommand=scrollbar.set)        
+
 if __name__ == "__main__":
     Adm().mainloop()
